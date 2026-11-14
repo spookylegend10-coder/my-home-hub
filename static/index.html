@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Home Hub & Converter</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/feather-icons"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: { colors: { brand: '#3b82f6', card: '#1e293b', dark: '#0f172a', border: '#334155' } } }
+    }
+  </script>
+</head>
+<body class="bg-dark text-slate-100 min-h-screen font-sans pb-20 select-none md:select-auto">
+
+  <!-- PIN МОДАЛКА -->
+  <div id="authModal" class="fixed inset-0 bg-dark/95 z-50 flex items-center justify-center p-4">
+    <div class="bg-card border border-border rounded-2xl p-6 max-w-xs w-full text-center">
+      <div class="w-12 h-12 bg-blue-500/10 text-brand rounded-xl flex items-center justify-center mx-auto mb-3">
+        <i data-feather="lock"></i>
+      </div>
+      <h2 class="text-lg font-bold mb-1">Home Hub</h2>
+      <p class="text-xs text-slate-400 mb-4">Введите PIN (по умолч. 1234)</p>
+      <input type="password" id="pinInput" placeholder="PIN" autofocus
+             class="w-full text-center text-xl tracking-widest bg-dark border border-border rounded-xl py-2.5 mb-3 text-white focus:outline-none focus:border-brand">
+      <button onclick="login()" class="w-full bg-brand py-2.5 rounded-xl text-sm font-semibold text-white">Войти</button>
+    </div>
+  </div>
+
+  <!-- ШАПКА -->
+  <header class="max-w-2xl mx-auto px-4 pt-6 pb-4 flex justify-between items-center border-b border-border">
+    <div class="flex items-center gap-2">
+      <div class="p-2 bg-brand/10 text-brand rounded-xl"><i data-feather="cpu" class="w-5 h-5"></i></div>
+      <div>
+        <h1 class="font-bold text-base leading-tight">Home Hub & Media</h1>
+        <p class="text-[10px] text-slate-400">Файлы падают в Загрузки на ПК</p>
+      </div>
+    </div>
+    <button onclick="logout()" class="p-2 bg-card rounded-xl border border-border text-slate-400 hover:text-white">
+      <i data-feather="log-out" class="w-4 h-4"></i>
+    </button>
+  </header>
+
+  <!-- ВКЛАДКИ -->
+  <div class="max-w-2xl mx-auto px-4 mt-4">
+    <div class="grid grid-cols-3 bg-card p-1 rounded-2xl border border-border text-xs font-medium text-slate-400">
+      <button onclick="switchTab('airdrop')" id="tab-airdrop" class="py-2.5 rounded-xl bg-brand text-white flex items-center justify-center gap-1.5 transition">
+        <i data-feather="send" class="w-3.5 h-3.5"></i> AirDrop
+      </button>
+      <button onclick="switchTab('ytdl')" id="tab-ytdl" class="py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition">
+        <i data-feather="download" class="w-3.5 h-3.5"></i> Скачать
+      </button>
+      <button onclick="switchTab('converter')" id="tab-converter" class="py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition">
+        <i data-feather="repeat" class="w-3.5 h-3.5"></i> Конвертер
+      </button>
+    </div>
+  </div>
+
+  <main class="max-w-2xl mx-auto px-4 mt-4">
+
+    <!-- 1. AIRDROP -->
+    <section id="pane-airdrop" class="space-y-4">
+      <div class="bg-card border border-border rounded-2xl p-4">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+          <i data-feather="clipboard" class="w-3.5 h-3.5 text-brand"></i> Буфер обмена ПК ↔ Телефон
+        </h2>
+        <textarea id="clipText" rows="3" placeholder="Вставьте текст или ссылку..."
+                  class="w-full bg-dark border border-border rounded-xl p-3 text-xs text-white focus:outline-none focus:border-brand mb-2"></textarea>
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="sendToPcClipboard()" class="bg-brand py-2 rounded-xl text-xs font-medium text-white flex items-center justify-center gap-1.5">
+            <i data-feather="arrow-up" class="w-3.5 h-3.5"></i> Отправить на ПК
+          </button>
+          <button onclick="readPcClipboard()" class="bg-slate-800 py-2 rounded-xl text-xs font-medium text-slate-200 flex items-center justify-center gap-1.5">
+            <i data-feather="arrow-down" class="w-3.5 h-3.5"></i> Взять с ПК
+          </button>
+        </div>
+      </div>
+
+      <div class="bg-card border border-border rounded-2xl p-4">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+          <i data-feather="upload-cloud" class="w-3.5 h-3.5 text-emerald-400"></i> Скинуть файлы на ПК
+        </h2>
+        <input type="file" id="fileUploadInput" onchange="uploadFileDirectly()" class="hidden">
+        <button onclick="document.getElementById('fileUploadInput').click()" 
+                class="w-full border-2 border-dashed border-border py-8 rounded-2xl flex flex-col items-center justify-center gap-2 bg-dark/40">
+          <i data-feather="file-plus" class="w-8 h-8 text-brand"></i>
+          <span class="text-xs font-medium text-slate-300">Выбрать файл (фото, видео, документ)</span>
+        </button>
+      </div>
+
+      <div class="bg-card border border-border rounded-2xl p-4">
+        <div class="flex justify-between items-center mb-3">
+          <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+            <i data-feather="folder" class="w-3.5 h-3.5 text-purple-400"></i> Скачать с ПК на телефон
+          </h2>
+          <button onclick="loadRecentFiles()" class="text-slate-400 hover:text-white"><i data-feather="rotate-cw" class="w-3.5 h-3.5"></i></button>
+        </div>
+        <div id="recentFilesList" class="space-y-1.5 text-xs text-slate-400">Загрузка...</div>
+      </div>
+    </section>
+
+    <!-- 2. СКАЧИВАНИЕ (YouTube, VK, Reels) -->
+    <section id="pane-ytdl" class="hidden space-y-4">
+      <div class="bg-card border border-border rounded-2xl p-4">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+          <i data-feather="video" class="w-3.5 h-3.5 text-rose-500"></i> Скачать видео или музыку
+        </h2>
+        <input type="text" id="ytdlUrl" placeholder="Вставьте ссылку https://..."
+               class="w-full bg-dark border border-border rounded-xl p-3 text-xs text-white focus:outline-none focus:border-brand mb-3">
+        <div class="grid grid-cols-2 gap-2 mb-3">
+          <button onclick="startDownload('video')" class="bg-brand py-2.5 rounded-xl text-xs font-semibold text-white flex items-center justify-center gap-1.5">
+            <i data-feather="film" class="w-3.5 h-3.5"></i> Видео (1080p)
+          </button>
+          <button onclick="startDownload('audio')" class="bg-purple-600 py-2.5 rounded-xl text-xs font-semibold text-white flex items-center justify-center gap-1.5">
+            <i data-feather="music" class="w-3.5 h-3.5"></i> Только MP3
+          </button>
+        </div>
+        <p id="ytdlStatus" class="text-xs text-center text-slate-400 hidden"></p>
+      </div>
+    </section>
+
+    <!-- 3. МУЛЬТИ-КОНВЕРТЕР И СЖИМАТЕЛЬ -->
+    <section id="pane-converter" class="hidden space-y-4">
+      <div class="bg-card border border-border rounded-2xl p-4">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+          <i data-feather="repeat" class="w-3.5 h-3.5 text-amber-400"></i> Конвертер и сжиматель
+        </h2>
+
+        <!-- Выбор файла -->
+        <input type="file" id="convertFileInput" class="hidden" onchange="updateConvertFileName()">
+        <button onclick="document.getElementById('convertFileInput').click()" 
+                class="w-full border-2 border-dashed border-border py-6 rounded-2xl flex flex-col items-center justify-center gap-1 bg-dark/40 mb-4 hover:border-brand transition">
+          <i data-feather="upload" class="w-6 h-6 text-amber-400"></i>
+          <span id="convertFileName" class="text-xs text-slate-300">Выберите видео или аудиофайл</span>
+        </button>
+
+        <!-- Кнопки конвертации форматов -->
+        <div class="text-[11px] text-slate-400 font-medium mb-1.5 uppercase tracking-wider">Конвертация форматов:</div>
+        <div class="grid grid-cols-2 gap-2 mb-3">
+          <button onclick="runConvert('to_mp3')" class="bg-slate-800 hover:bg-slate-700 p-2.5 rounded-xl text-xs text-slate-200 flex items-center justify-center gap-1.5">
+            🎵 В MP3 (Звук)
+          </button>
+          <button onclick="runConvert('to_mp4')" class="bg-slate-800 hover:bg-slate-700 p-2.5 rounded-xl text-xs text-slate-200 flex items-center justify-center gap-1.5">
+            🎬 В MP4 (Видео)
+          </button>
+          <button onclick="runConvert('to_gif')" class="col-span-2 bg-slate-800 hover:bg-slate-700 p-2.5 rounded-xl text-xs text-amber-300 flex items-center justify-center gap-1.5">
+            🎞️ В GIF-анимацию
+          </button>
+        </div>
+
+        <!-- Кнопки сжатия -->
+        <div class="text-[11px] text-slate-400 font-medium mb-1.5 uppercase tracking-wider">Сжатие для мессенджеров:</div>
+        <div class="grid grid-cols-2 gap-2 mb-3">
+          <button onclick="runConvert('compress_25')" class="bg-blue-950/60 border border-blue-800/40 hover:bg-blue-900/60 p-2.5 rounded-xl text-xs text-blue-200 flex items-center justify-center gap-1">
+            🎯 До 25 МБ (Discord/TG)
+          </button>
+          <button onclick="runConvert('compress_10')" class="bg-blue-950/60 border border-blue-800/40 hover:bg-blue-900/60 p-2.5 rounded-xl text-xs text-blue-200 flex items-center justify-center gap-1">
+            ⚡ До 10 МБ
+          </button>
+        </div>
+
+        <!-- Статус и результат -->
+        <div id="convertStatus" class="hidden text-center text-xs p-3 rounded-xl bg-dark/60 border border-border">
+          <span id="convertStatusText" class="text-slate-300">Обработка...</span>
+          <div id="convertResultBtn" class="mt-2 hidden"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    let token = localStorage.getItem("hub_pin") || "";
+
+    window.onload = () => {
+      feather.replace();
+      if (!token) document.getElementById('authModal').classList.remove('hidden');
+      else {
+        document.getElementById('authModal').classList.add('hidden');
+        loadRecentFiles();
+      }
+    };
+
+    async function login() {
+      const pin = document.getElementById('pinInput').value.trim();
+      const res = await fetch('/api/auth/verify', { headers: { 'Authorization': `Bearer ${pin}` }, method: 'POST' });
+      if (res.ok) {
+        token = pin;
+        localStorage.setItem("hub_pin", token);
+        document.getElementById('authModal').classList.add('hidden');
+        loadRecentFiles();
+      } else alert("Неверный PIN");
+    }
+
+    function logout() {
+      localStorage.removeItem("hub_pin");
+      location.reload();
+    }
+
+    function switchTab(tab) {
+      ['airdrop', 'ytdl', 'converter'].forEach(t => {
+        document.getElementById(`pane-${t}`).classList.add('hidden');
+        document.getElementById(`tab-${t}`).className = "py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition text-slate-400";
+      });
+      document.getElementById(`pane-${tab}`).classList.remove('hidden');
+      document.getElementById(`tab-${tab}`).className = "py-2.5 rounded-xl bg-brand text-white flex items-center justify-center gap-1.5 transition";
+      feather.replace();
+    }
+
+    // AIRDROP
+    async function sendToPcClipboard() {
+      const text = document.getElementById('clipText').value;
+      if (!text) return alert("Введите текст");
+      const res = await fetch('/api/clipboard', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
+      if (res.ok) alert("Скопировано в буфер ПК!");
+    }
+
+    async function readPcClipboard() {
+      const res = await fetch('/api/clipboard', { headers: { 'Authorization': `Bearer ${token}` } });
+      const data = await res.json();
+      document.getElementById('clipText').value = data.text;
+    }
+
+    async function uploadFileDirectly() {
+      const input = document.getElementById('fileUploadInput');
+      if (!input.files[0]) return;
+      const formData = new FormData();
+      formData.append('file', input.files[0]);
+      alert("Отправка на ПК...");
+      const res = await fetch('/api/upload', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+      if (res.ok) {
+        alert("Файл сохранен в Загрузки на ПК!");
+        loadRecentFiles();
+      } else alert("Ошибка отправки");
+    }
+
+    async function loadRecentFiles() {
+      const res = await fetch('/api/recent-files', { headers: { 'Authorization': `Bearer ${token}` } });
+      const files = await res.json();
+      const list = document.getElementById('recentFilesList');
+      if (files.length === 0) { list.innerHTML = "Файлов пока нет"; return; }
+      list.innerHTML = files.map(f => `
+        <div class="flex justify-between items-center bg-dark/60 p-2.5 rounded-xl border border-border/50">
+          <span class="truncate pr-2 text-slate-200">${f.name} (${f.size_mb} МБ)</span>
+          <a href="/api/download-from-pc/${encodeURIComponent(f.name)}?token=${token}" download class="p-1.5 bg-slate-800 text-brand rounded-lg"><i data-feather="download" class="w-3.5 h-3.5"></i></a>
+        </div>
+      `).join('');
+      feather.replace();
+    }
+
+    // YOUTUBE / VK
+    async function startDownload(mode) {
+      const url = document.getElementById('ytdlUrl').value.trim();
+      if (!url) return alert("Вставьте ссылку");
+      const status = document.getElementById('ytdlStatus');
+      status.innerText = "Скачивание началось... Подождите 10-30 сек.";
+      status.classList.remove('hidden');
+
+      const res = await fetch('/api/ytdl', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, mode })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        status.innerText = "✅ " + data.message;
+        loadRecentFiles();
+      } else status.innerText = "❌ " + data.detail;
+    }
+
+    // МУЛЬТИ-КОНВЕРТЕР
+    function updateConvertFileName() {
+      const file = document.getElementById('convertFileInput').files[0];
+      if (file) {
+        document.getElementById('convertFileName').innerText = `${file.name} (${(file.size / (1024*1024)).toFixed(1)} МБ)`;
+      }
+    }
+
+    async function runConvert(action) {
+      const file = document.getElementById('convertFileInput').files[0];
+      if (!file) return alert("Сначала выберите файл");
+
+      const statusBox = document.getElementById('convertStatus');
+      const statusText = document.getElementById('convertStatusText');
+      const resultBtn = document.getElementById('convertResultBtn');
+
+      statusBox.classList.remove('hidden');
+      statusText.innerText = "⚙️ Обработка через процессор ПК... Это может занять от 10 сек до минуты.";
+      resultBtn.classList.add('hidden');
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('action', action);
+
+      const res = await fetch('/api/convert', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+      const data = await res.json();
+
+      if (res.ok) {
+        statusText.innerText = `✅ ${data.message}`;
+        resultBtn.innerHTML = `
+          <a href="/api/download-from-pc/${encodeURIComponent(data.filename)}?token=${token}" download
+             class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand text-white rounded-lg text-xs font-semibold shadow">
+            📥 Скачать результат на телефон
+          </a>
+        `;
+        resultBtn.classList.remove('hidden');
+        loadRecentFiles();
+      } else {
+        statusText.innerText = `❌ ${data.detail}`;
+      }
+    }
+  </script>
+</body>
+</html>
